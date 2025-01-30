@@ -10,4 +10,4 @@ To run the dashboard:
 3. Run the script to generate the dashboard, which will display as shown in `image A`.
 
 ## Demo
-<video src="vedio/Traffic Digital Twin Dashboard - Google Chrome 2025-01-30 11-59-42.mp4" controls width="800"></video>
+<video src="vedio/vedio.mp4" controls width="800"></video>
