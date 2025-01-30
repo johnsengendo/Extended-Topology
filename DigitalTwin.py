@@ -15,7 +15,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# Set random seed for reproducibility
+# Setting random seed for reproducibility
 SEED = 2022
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -82,10 +82,10 @@ class AdaptivePIDController:
         self.min_gain = 0.05
         self.max_gain = 2.0
         self.error_history = deque(maxlen=100)
-        self.prediction_errors = deque(maxlen=1000)  # Store historical prediction errors
-        self.mae_history = deque(maxlen=100)  # Track MAE over time
+        self.prediction_errors = deque(maxlen=1000)  # Storing historical prediction errors
+        self.mae_history = deque(maxlen=100)  # Tracking MAE over time
         self.last_adaptation_time = 0
-        self.adaptation_interval = 10  # Adapt every 10 updates
+        self.adaptation_interval = 10  # Adapting every 10 updates
 
     def adapt_gains(self):
         if len(self.prediction_errors) < 10:
@@ -116,7 +116,7 @@ class AdaptivePIDController:
         error = self.setpoint - measured_value
         self.error_history.append(error)
 
-        # Adapt gains periodically
+        # Adapting gains periodically
         if len(self.prediction_errors) % self.adaptation_interval == 0:
             self.adapt_gains()
 
@@ -214,11 +214,11 @@ app.layout = dbc.Container(
 def update_graphs(n_intervals, activate_clicks, deactivate_clicks, increase_kp, decrease_kp, increase_ki, decrease_ki, increase_kd, decrease_kd, ahead):
     global current_index, val_predictions, test_predictions, val_actuals, test_actuals, val_pid_predictions, test_pid_predictions, pid
 
-    # Determine which button was clicked
+    # Determining which button was clicked
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-    # Adjust PID parameters based on the button clicked
+    # Adjusting PID parameters based on the button clicked
     if button_id == "increase-kp":
         pid.kp = np.clip(pid.kp * 1.1, pid.min_gain, pid.max_gain)
     elif button_id == "decrease-kp":
@@ -233,7 +233,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks, increase_kp, 
         pid.kd = np.clip(pid.kd * 0.9, pid.min_gain * 0.5, pid.max_gain * 0.5)
 
     try:
-        # Prepare windowed datasets
+        # Preparing windowed datasets
         X_val_w, r_val_w = create_dataset_windowed(val_scaled, val_labels, ahead=ahead, window_size=WINDOW_SIZE)
         X_test_w, r_test_w = create_dataset_windowed(test_scaled, test_labels, ahead=ahead, window_size=WINDOW_SIZE)
 
