@@ -20,4 +20,7 @@ Steps to set up and run the dashboard:
 3. **Running the script** to launch the [dashboard](DigitalTwin.py).
 4. Below is the dashboard overview.
 ![Dashboard Preview](images/dash-board-image.png)
+
+### **Next step for the extended topology to be built, image below** 
+![Dashboard Preview](images/dash-board-image.png)
  
