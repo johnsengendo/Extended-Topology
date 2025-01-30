@@ -11,3 +11,4 @@ To run the dashboard:
 
 ## Demo
 <video src="vedio/vedio.mp4" controls width="800"></video>
+If the video does not play, [click here to watch it](vedio/vedio.mp4).
