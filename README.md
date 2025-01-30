@@ -1,9 +1,7 @@
 # Extended-Topology
 
-# Dashboard Project
-
-## Overview
-This project provides a dashboard that visualizes data using a pre-trained module.
+## Dashboard Project Overview
+Here the dashboard provides a visualization of data using a pre-trained module.
 
 ## Running the Dashboard
 To run the dashboard:
@@ -11,5 +9,5 @@ To run the dashboard:
 2. Load the dataset (`X`).
 3. Run the script to generate the dashboard, which will display as shown in `image A`.
 
-## Example Output
-![Dashboard Preview](path/to/image_A.png)
+## Demo
+<video src="path/to/video.mp4" controls width="800"></video>
