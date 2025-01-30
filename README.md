@@ -5,8 +5,8 @@ Here the dashboard provides a visualization of data using a pre-trained module.
 
 ## Running the Dashboard
 To run the dashboard:
-1. Import the pre-trained module (`X`).
-2. Load the dataset (`X`).
+1. Import the pre-trained module (`[cnn_traffic_model.pth]data/packets_per_sec_analysis.csv``).
+2. Load the dataset (`[data](data/packets_per_sec_analysis.csv)`).
 3. Run the script to generate the dashboard, which will display as shown in `image A`.
 
 ## Demo
