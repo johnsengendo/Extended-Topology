@@ -2,7 +2,7 @@
 
 ## Live-Dashboard Overview
 Here the live dashboard provides a visualization to give a realistic traffic monitoring scenario. Key feature:
-1.Web-based interface
+1. Web-based interface
 2. Live-updating graphs.
 3. Dynamic prediction intervas.
 4. Interactive PID control.
