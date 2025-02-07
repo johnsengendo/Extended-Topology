@@ -32,15 +32,15 @@ def start_client():
 def start_iperf_server(host):
     host.cmd('iperf -s -p 5001 -u &')
 
-# Function to start the iperf client
+# Function to start the iperf client (targeting h6)
 def start_iperf_client(host):
     host.cmd('iperf -c 10.0.0.6 -p 5001 -u -b 5M -t 120 &')
 
-# Function to start another iperf client
+# Function to start another iperf client (targeting h5)
 def start_iperf_client2(host):
     host.cmd('iperf -c 10.0.0.8 -p 5001 -u -b 5M -t 120 &')
 
-# Function to stop the iperf client
+# Function to stop iperf processes on a host
 def stop_iperf_client(host):
     host.cmd('pkill iperf')
 
@@ -130,20 +130,29 @@ if __name__ == '__main__':
     server_thread.start()
     client_thread.start()
 
-    # Starting iperf servers on h6 and h5
-    start_iperf_server(h6)
-    start_iperf_server(h5)
-
-    # Thread to start iperf clients after a delay and then stop them
-    def start_iperf_after_delay():
-        #time.sleep(2)
+    # Iperf communications: disabled for the first 300 seconds, then enabled for the next 300 seconds.
+    def iperf_control():
+        info('*** Iperf communications disabled for the first 300 seconds.\n')
+        time.sleep(300)
+        
+        info('*** Enabling iperf communications for 300 seconds...\n')
+        # Start iperf servers on h6 and h5
+        start_iperf_server(h6)
+        start_iperf_server(h5)
+        
+        # Start iperf clients on h3 and h4
         start_iperf_client(h3)
         start_iperf_client2(h4)
-        #time.sleep(20)
+        
+        # Allowing iperf to run for 300 seconds
+        time.sleep(300)
+        
+        # Stop the iperf clients (which stops the ongoing iperf sessions)
         stop_iperf_client(h3)
         stop_iperf_client(h4)
+        info('*** Iperf communications have been stopped.\n')
 
-    iperf_thread = threading.Thread(target=start_iperf_after_delay)
+    iperf_thread = threading.Thread(target=iperf_control)
     iperf_thread.start()
 
     # Waiting for streaming and iperf threads to finish
