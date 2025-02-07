@@ -52,17 +52,15 @@ def change_link_properties(link, bw, delay, jitter=0, loss=0):
 
 if __name__ == '__main__':
     # Parsing command-line arguments
-    parser = argparse.ArgumentParser(description='Video streaming application with dynamic bandwidth and delay.')
+    parser = argparse.ArgumentParser(description='Video streaming application with fixed bandwidth and delay.')
     parser.add_argument('--autotest', dest='autotest', action='store_const', const=True, default=False,
                         help='Enables automatic testing of the topology and closes the streaming application.')
     args = parser.parse_args()
-
     autotest = args.autotest
 
     # Shared directory for pcap files and other shared data
     script_directory = os.path.abspath(os.path.dirname(__file__))
     shared_directory = os.path.join(script_directory, 'pcap')
-
     if not os.path.exists(shared_directory):
         os.makedirs(shared_directory)
 
@@ -72,7 +70,7 @@ if __name__ == '__main__':
     net = Containernet(controller=Controller, link=TCLink, xterms=False)
     mgr = VNFManager(net)
 
-    info('*** Add controller\n')
+    info('*** Adding controller\n')
     net.addController('c0')
 
     info('*** Creating hosts\n')
@@ -96,6 +94,7 @@ if __name__ == '__main__':
 
     net.addLink(switch1, server)
     net.addLink(switch1, h1)
+    # Create the middle link between switches
     middle_link = net.addLink(switch1, switch2, bw=10, delay='10ms')
     net.addLink(switch2, client)
     net.addLink(switch2, h2)
@@ -108,9 +107,12 @@ if __name__ == '__main__':
     net.start()
 
     # Testing connectivity: ping from client to server
-    info("*** Client host pings the server to test for connectivity: \n")
+    info("*** Client host pings the server to test connectivity: \n")
     reply = client.cmd("ping -c 5 10.0.0.1")
     print(reply)
+
+    # Set fixed link properties once (for example: 40 Mbps, 80 ms delay, 5 ms jitter, 0.1% loss)
+    change_link_properties(middle_link, 40, 80, 5, 0.1)
 
     # Starting the tcpdump process to capture traffic on the middle link.
     capture_interface = middle_link.intf1.name
@@ -126,29 +128,12 @@ if __name__ == '__main__':
     # Starting streaming server and client applications in separate threads
     server_thread = threading.Thread(target=start_server)
     client_thread = threading.Thread(target=start_client)
-
     server_thread.start()
     client_thread.start()
 
     # Starting iperf servers on h6 and h5
     start_iperf_server(h6)
     start_iperf_server(h5)
-
-    # Thread to update the link properties dynamically every 120 seconds using fixed values
-    def update_link_properties():
-        # Fixed configuration values
-        bw = 40      # Mbps
-        delay = 80   # ms
-        jitter = 5   # ms
-        loss = 0.1   # %
-        while True:
-            change_link_properties(middle_link, bw, delay, jitter, loss)
-            # Waiting for 2 minutes (120 seconds) before applying the same properties again
-            time.sleep(120)
-
-    dynamic_link_thread = threading.Thread(target=update_link_properties)
-    dynamic_link_thread.daemon = True  # Daemon thread will exit when the main thread finishes
-    dynamic_link_thread.start()
 
     # Thread to start iperf clients after a delay and then stop them
     def start_iperf_after_delay():
