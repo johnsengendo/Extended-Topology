@@ -4,7 +4,6 @@ import subprocess
 import sys
 import time
 import threading
-import random
 from comnetsemu.cli import CLI, spawnXtermDocker
 from comnetsemu.net import Containernet, VNFManager
 from mininet.link import TCLink
@@ -57,13 +56,6 @@ if __name__ == '__main__':
     parser.add_argument('--autotest', dest='autotest', action='store_const', const=True, default=False,
                         help='Enables automatic testing of the topology and closes the streaming application.')
     args = parser.parse_args()
-
-    # Predefined values for dynamic link changes
-    bw_delay_pairs = [
-        (30, 60), (35, 70), (40, 80), (45, 90), (50, 100)
-    ]
-    jitter_values = [0, 5, 10, 20]
-    loss_values = [0, 0.1, 0.5, 1]
 
     autotest = args.autotest
 
@@ -142,20 +134,20 @@ if __name__ == '__main__':
     start_iperf_server(h6)
     start_iperf_server(h5)
 
-    # Thread to update the link properties dynamically every 120 seconds
+    # Thread to update the link properties dynamically every 120 seconds using fixed values
     def update_link_properties():
+        # Fixed configuration values
+        bw = 40      # Mbps
+        delay = 80   # ms
+        jitter = 5   # ms
+        loss = 0.1   # %
         while True:
-            bw, delay = random.choice(bw_delay_pairs)
-            jitter = random.choice(jitter_values)
-            loss = random.choice(loss_values)
-
             change_link_properties(middle_link, bw, delay, jitter, loss)
-
-            # Waiting for 2 minutes (120 seconds) before changing the properties again
+            # Waiting for 2 minutes (120 seconds) before applying the same properties again
             time.sleep(120)
 
     dynamic_link_thread = threading.Thread(target=update_link_properties)
-    dynamic_link_thread.daemon = True  # Setting as daemon to exit when main thread finishes
+    dynamic_link_thread.daemon = True  # Daemon thread will exit when the main thread finishes
     dynamic_link_thread.start()
 
     # Thread to start iperf clients after a delay and then stop them
@@ -183,7 +175,7 @@ if __name__ == '__main__':
     tcpdump_proc.terminate()
     tcpdump_proc.wait()
 
-    # Cleaningup Docker containers and stoping the network
+    # Cleaning up Docker containers and stopping the network
     mgr.removeContainer('streaming_server')
     mgr.removeContainer('streaming_client')
     net.stop()
