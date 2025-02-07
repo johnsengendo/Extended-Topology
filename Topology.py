@@ -136,10 +136,10 @@ if __name__ == '__main__':
 
     # Thread to start iperf clients after a delay and then stop them
     def start_iperf_after_delay():
-        time.sleep(2)
+        #time.sleep(2)
         start_iperf_client(h3)
         start_iperf_client2(h4)
-        time.sleep(20)
+        #time.sleep(20)
         stop_iperf_client(h3)
         stop_iperf_client(h4)
 
