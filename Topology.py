@@ -44,7 +44,7 @@ def start_iperf_client2(host):
 def stop_iperf_client(host):
     host.cmd('pkill iperf')
 
-# Function to change the properties of the middle link
+# Function to change the properties of the middle link (bottleneck link)
 def change_link_properties(link, bw, delay, jitter=0, loss=0):
     info(f'*** Changing link properties: BW={bw} Mbps, Delay={delay} ms, Jitter={jitter} ms, Loss={loss}%\n')
     link.intf1.config(bw=bw, delay=f'{delay}ms', jitter=f'{jitter}ms', loss=loss)
@@ -94,7 +94,6 @@ if __name__ == '__main__':
 
     net.addLink(switch1, server)
     net.addLink(switch1, h1)
-    # Create the middle link between switches
     middle_link = net.addLink(switch1, switch2, bw=10, delay='10ms')
     net.addLink(switch2, client)
     net.addLink(switch2, h2)
@@ -111,7 +110,7 @@ if __name__ == '__main__':
     reply = client.cmd("ping -c 5 10.0.0.1")
     print(reply)
 
-    # Set fixed link properties once (for example: 40 Mbps, 80 ms delay, 5 ms jitter, 0.1% loss)
+    # Setting fixed link properties (for example: 40 Mbps, 80 ms delay, 5 ms jitter, 0.1% loss)
     change_link_properties(middle_link, 40, 80, 5, 0.1)
 
     # Starting the tcpdump process to capture traffic on the middle link.
