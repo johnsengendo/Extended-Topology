@@ -110,8 +110,8 @@ if __name__ == '__main__':
     reply = client.cmd("ping -c 5 10.0.0.1")
     print(reply)
 
-    # Setting fixed link properties (for example: 40 Mbps, 80 ms delay, 5 ms jitter, 0.1% loss)
-    change_link_properties(middle_link, 40, 80, 5, 0.1)
+    # Setting fixed link properties (for example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
+    change_link_properties(middle_link, 100, 0, 5, 0.1)
 
     # Starting the tcpdump process to capture traffic on the middle link.
     capture_interface = middle_link.intf1.name
