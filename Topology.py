@@ -113,12 +113,20 @@ if __name__ == '__main__':
     # Setting fixed link properties (for example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
     change_link_properties(middle_link, 100, 0, 5, 0.1)
 
-    # Starting the tcpdump process to capture traffic on the middle link.
+    # Start two tcpdump processes on the middle link interface:
     capture_interface = middle_link.intf1.name
-    capture_file = os.path.join(shared_directory, "middle_link_capture.pcap")
-    tcpdump_cmd = ["sudo", "tcpdump", "-i", capture_interface, "-w", capture_file]
-    info(f'*** Starting tcpdump on interface {capture_interface}, saving to {capture_file}\n')
-    tcpdump_proc = subprocess.Popen(tcpdump_cmd)
+
+    # Capture iperf traffic (UDP port 5001)
+    iperf_capture_file = os.path.join(shared_directory, "iperf_capture.pcap")
+    tcpdump_cmd_iperf = ["sudo", "tcpdump", "-i", capture_interface, "udp port 5001", "-w", iperf_capture_file]
+    info(f'*** Starting tcpdump on interface {capture_interface} for iperf traffic, saving to {iperf_capture_file}\n')
+    tcpdump_proc_iperf = subprocess.Popen(tcpdump_cmd_iperf)
+
+    # Capture video traffic (all traffic that is not iperf)
+    video_capture_file = os.path.join(shared_directory, "video_capture.pcap")
+    tcpdump_cmd_video = ["sudo", "tcpdump", "-i", capture_interface, "not udp port 5001", "-w", video_capture_file]
+    info(f'*** Starting tcpdump on interface {capture_interface} for video traffic, saving to {video_capture_file}\n')
+    tcpdump_proc_video = subprocess.Popen(tcpdump_cmd_video)
 
     # Adding streaming Docker containers
     streaming_server = add_streaming_container(mgr, 'streaming_server', 'server', 'streaming_server_image', shared_directory)
@@ -163,10 +171,12 @@ if __name__ == '__main__':
     if not autotest:
         CLI(net)
 
-    # Terminating tcpdump capture before cleanup
-    info('*** Terminating tcpdump capture\n')
-    tcpdump_proc.terminate()
-    tcpdump_proc.wait()
+    # Terminating tcpdump captures before cleanup
+    info('*** Terminating tcpdump captures\n')
+    tcpdump_proc_iperf.terminate()
+    tcpdump_proc_iperf.wait()
+    tcpdump_proc_video.terminate()
+    tcpdump_proc_video.wait()
 
     # Cleaning up Docker containers and stopping the network
     mgr.removeContainer('streaming_server')
