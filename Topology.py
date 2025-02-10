@@ -130,7 +130,7 @@ if __name__ == '__main__':
     server_thread.start()
     client_thread.start()
 
-    # Iperf communications: disabled for the first 300 seconds, then enabled for the next 300 seconds.
+    # Iperf communications: disabled for the first 100 seconds, then enabled for the next 100 seconds.
     def iperf_control():
         info('*** Iperf communications disabled for the first 100 seconds.\n')
         time.sleep(100)
