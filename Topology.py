@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     # Capture iperf traffic (UDP port 5001)
     iperf_capture_file = os.path.join(shared_directory, "iperf_capture.pcap")
-    tcpdump_cmd_iperf = ["sudo", "tcpdump", "-i", capture_interface, "udp port 5001", "-w", iperf_capture_file]
+    tcpdump_cmd_iperf = ["sudo", "tcpdump", "-i", capture_interface, "-s", "96", "udp port 5001", "-w", iperf_capture_file]
     info(f'*** Starting tcpdump on interface {capture_interface} for iperf traffic, saving to {iperf_capture_file}\n')
     tcpdump_proc_iperf = subprocess.Popen(tcpdump_cmd_iperf)
 
