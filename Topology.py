@@ -132,10 +132,10 @@ if __name__ == '__main__':
 
     # Iperf communications: disabled for the first 300 seconds, then enabled for the next 300 seconds.
     def iperf_control():
-        info('*** Iperf communications disabled for the first 300 seconds.\n')
-        time.sleep(300)
+        info('*** Iperf communications disabled for the first 100 seconds.\n')
+        time.sleep(100)
         
-        info('*** Enabling iperf communications for 300 seconds...\n')
+        info('*** Enabling iperf communications for 100 seconds...\n')
         # Start iperf servers on h6 and h5
         start_iperf_server(h6)
         start_iperf_server(h5)
@@ -144,8 +144,8 @@ if __name__ == '__main__':
         start_iperf_client(h3)
         start_iperf_client2(h4)
         
-        # Allowing iperf to run for 300 seconds
-        time.sleep(300)
+        # Allowing iperf to run for 100 seconds
+        time.sleep(100)
         
         # Stop the iperf clients (which stops the ongoing iperf sessions)
         stop_iperf_client(h3)
