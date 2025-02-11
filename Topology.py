@@ -43,7 +43,7 @@ def start_iperf_server_flow1(host):
     host.cmd('iperf -s -p 5001 -u &')
 
 def start_iperf_client_flow1(host):
-    # iPerf client, 600-second test to ensure we capture more data
+    # iPerf client
     host.cmd('iperf -c 10.0.0.6 -p 5001 -u -b 5M -t 600 &')
 
 # Flow 2: from h5 -> h4 (UDP port 5002), reverse direction
@@ -52,7 +52,7 @@ def start_iperf_server_flow2(host):
     host.cmd('iperf -s -p 5002 -u &')
 
 def start_iperf_client_flow2(host):
-    # iPerf client, 600-second test
+    # iPerf client
     host.cmd('iperf -c 10.0.0.7 -p 5002 -u -b 5M -t 600 &')
 
 # Function to stop iPerf on a host
@@ -67,7 +67,7 @@ def change_link_properties(link, bw, delay, jitter=0, loss=0):
 
 if __name__ == '__main__':
     # ------------------------------
-    # Parse Command-Line Arguments
+    # Parsing command-line arguments
     # ------------------------------
     parser = argparse.ArgumentParser(description='Video streaming + iPerf testbed.')
     parser.add_argument('--autotest', dest='autotest', action='store_const',
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     autotest = args.autotest
 
     # ------------------------------
-    # Setup Environment + Network
+    # Setting-up environment + network
     # ------------------------------
     script_directory = os.path.abspath(os.path.dirname(__file__))
     shared_directory = os.path.join(script_directory, 'pcap')
@@ -127,16 +127,16 @@ if __name__ == '__main__':
     info('\n*** Starting network\n')
     net.start()
 
-    # Quick connectivity check
+    # Quick connectivity check between client and server
     info("*** Testing connectivity: client -> server\n")
     reply = client.cmd("ping -c 3 10.0.0.1")
     print(reply)
 
-    # Set link properties (example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
+    # Setting link properties (example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
     change_link_properties(middle_link, 100, 0, 5, 0.1)
 
     # ------------------------------
-    # Start TCPDump Captures
+    # Starting TCPDump captures
     # ------------------------------
     capture_interface = middle_link.intf1.name
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     info(f'*** Starting tcpdump for Flow 2 -> {iperf_flow2_capture}\n')
     tcpdump_proc_flow2 = subprocess.Popen(tcpdump_cmd_flow2)
 
-    # Flow 3: all other traffic (NOT udp port 5001 or 5002)
+    # Flow 3: capturing all other traffic (NOT iperf port 5001 or 5002)
     flow3_capture = os.path.join(shared_directory, "flow3.pcap")
     tcpdump_cmd_flow3 = [
         "sudo", "tcpdump", "-i", capture_interface, "-s", "96",
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     tcpdump_proc_flow3 = subprocess.Popen(tcpdump_cmd_flow3)
 
     # ------------------------------
-    # Add Streaming Containers
+    # Adding streaming containers
     # ------------------------------
     streaming_server = add_streaming_container(
         mgr, 'streaming_server', 'server',
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     )
 
     # ------------------------------
-    # Start Streaming Threads
+    # Starting streaming threads
     # ------------------------------
     server_thread = threading.Thread(target=start_server)
     client_thread = threading.Thread(target=start_client)
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     client_thread.start()
 
     # ------------------------------
-    # Start iPerf Flows (Run for 600s)
+    # Starting iPerf flows
     # ------------------------------
     def iperf_control():
         info('*** Starting iPerf flows (600s duration)...\n')
@@ -201,9 +201,6 @@ if __name__ == '__main__':
         start_iperf_server_flow2(h4)
         start_iperf_client_flow2(h5)
 
-        # Let iPerf run for 600 seconds
-        # (If your streaming ends earlier, you may see fewer packets
-        #  unless you remove the stop_iperf calls below.)
         time.sleep(600)
 
         info('*** Stopping iPerf flows...\n')
@@ -214,7 +211,7 @@ if __name__ == '__main__':
     iperf_thread.start()
 
     # ------------------------------
-    # Wait for Streaming to Finish
+    # Waiting for streaming to finish
     # ------------------------------
     server_thread.join()
     client_thread.join()
@@ -226,7 +223,7 @@ if __name__ == '__main__':
         CLI(net)
 
     # ------------------------------
-    # Terminate tcpdump captures
+    # Terminating tcpdump captures
     # ------------------------------
     info('*** Terminating tcpdump captures\n')
     tcpdump_proc_flow1.terminate()
