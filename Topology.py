@@ -22,39 +22,63 @@ def add_streaming_container(manager, name, role, image, shared_dir):
 
 # Function to start the streaming server
 def start_server():
-    subprocess.run(['docker', 'exec', '-it', 'streaming_server', 'bash', '-c', 'cd /home && python3 video_streaming.py'])
+    subprocess.run([
+        'docker', 'exec', '-it', 'streaming_server',
+        'bash', '-c', 'cd /home && python3 video_streaming.py'
+    ])
 
 # Function to start the streaming client
 def start_client():
-    subprocess.run(['docker', 'exec', '-it', 'streaming_client', 'bash', '-c', 'cd /home && python3 get_video_streamed.py'])
+    subprocess.run([
+        'docker', 'exec', '-it', 'streaming_client',
+        'bash', '-c', 'cd /home && python3 get_video_streamed.py'
+    ])
 
-# ----- Iperf Flow Functions -----
-def start_iperf_server(host, port):
-    host.cmd(f'iperf -s -p {port} -u &')
+# ------------------------------
+# iPerf Flow Functions
+# ------------------------------
+# Flow 1: from h3 -> h6 (UDP port 5001)
+def start_iperf_server_flow1(host):
+    # iPerf server on port 5001
+    host.cmd('iperf -s -p 5001 -u &')
 
-def start_iperf_client(host, server_ip, port):
-    # No fixed duration so the flow runs until terminated.
-    host.cmd(f'iperf -c {server_ip} -p {port} -u -b 5M &')
+def start_iperf_client_flow1(host):
+    # iPerf client, 600-second test to ensure we capture more data
+    host.cmd('iperf -c 10.0.0.6 -p 5001 -u -b 5M -t 600 &')
 
-# Function to stop iperf processes on a host
+# Flow 2: from h5 -> h4 (UDP port 5002), reverse direction
+def start_iperf_server_flow2(host):
+    # iPerf server on port 5002
+    host.cmd('iperf -s -p 5002 -u &')
+
+def start_iperf_client_flow2(host):
+    # iPerf client, 600-second test
+    host.cmd('iperf -c 10.0.0.7 -p 5002 -u -b 5M -t 600 &')
+
+# Function to stop iPerf on a host
 def stop_iperf(host):
     host.cmd('pkill iperf')
 
-# Function to change the properties of the middle link (bottleneck link)
+# Function to change link properties (bottleneck link)
 def change_link_properties(link, bw, delay, jitter=0, loss=0):
     info(f'*** Changing link properties: BW={bw} Mbps, Delay={delay} ms, Jitter={jitter} ms, Loss={loss}%\n')
     link.intf1.config(bw=bw, delay=f'{delay}ms', jitter=f'{jitter}ms', loss=loss)
     link.intf2.config(bw=bw, delay=f'{delay}ms', jitter=f'{jitter}ms', loss=loss)
 
 if __name__ == '__main__':
-    # Parsing command-line arguments
-    parser = argparse.ArgumentParser(description='Video streaming application with fixed bandwidth and delay.')
-    parser.add_argument('--autotest', dest='autotest', action='store_const', const=True, default=False,
-                        help='Enables automatic testing of the topology and closes the streaming application.')
+    # ------------------------------
+    # Parse Command-Line Arguments
+    # ------------------------------
+    parser = argparse.ArgumentParser(description='Video streaming + iPerf testbed.')
+    parser.add_argument('--autotest', dest='autotest', action='store_const',
+                        const=True, default=False,
+                        help='Enable automatic testing and close streaming automatically.')
     args = parser.parse_args()
     autotest = args.autotest
 
-    # Shared directory for pcap files and other shared data
+    # ------------------------------
+    # Setup Environment + Network
+    # ------------------------------
     script_directory = os.path.abspath(os.path.dirname(__file__))
     shared_directory = os.path.join(script_directory, 'pcap')
     if not os.path.exists(shared_directory):
@@ -62,7 +86,6 @@ if __name__ == '__main__':
 
     setLogLevel('info')
 
-    # Initializing the network
     net = Containernet(controller=Controller, link=TCLink, xterms=False)
     mgr = VNFManager(net)
 
@@ -71,18 +94,21 @@ if __name__ == '__main__':
 
     info('*** Creating hosts\n')
     server = net.addDockerHost(
-        'server', dimage='dev_test', ip='10.0.0.1', docker_args={'hostname': 'server'}
+        'server', dimage='dev_test', ip='10.0.0.1',
+        docker_args={'hostname': 'server'}
     )
     client = net.addDockerHost(
-        'client', dimage='dev_test', ip='10.0.0.2', docker_args={'hostname': 'client'}
+        'client', dimage='dev_test', ip='10.0.0.2',
+        docker_args={'hostname': 'client'}
     )
 
+    # iPerf hosts
     h1 = net.addHost('h1', ip='10.0.0.3')
     h2 = net.addHost('h2', ip='10.0.0.4')
-    h3 = net.addHost('h3', ip='10.0.0.5')  # Iperf Flow 1 client
-    h6 = net.addHost('h6', ip='10.0.0.6')  # Iperf Flow 1 server
-    h4 = net.addHost('h4', ip='10.0.0.7')  # Iperf Flow 2 server (reverse direction)
-    h5 = net.addHost('h5', ip='10.0.0.8')  # Iperf Flow 2 client (reverse direction)
+    h3 = net.addHost('h3', ip='10.0.0.5')  # Flow 1 client
+    h6 = net.addHost('h6', ip='10.0.0.6')  # Flow 1 server
+    h4 = net.addHost('h4', ip='10.0.0.7')  # Flow 2 server
+    h5 = net.addHost('h5', ip='10.0.0.8')  # Flow 2 client
 
     info('*** Adding switches and links\n')
     switch1 = net.addSwitch('s1')
@@ -101,68 +127,107 @@ if __name__ == '__main__':
     info('\n*** Starting network\n')
     net.start()
 
-    # Testing connectivity: ping from client to server
-    info("*** Client host pings the server to test connectivity: \n")
-    reply = client.cmd("ping -c 5 10.0.0.1")
+    # Quick connectivity check
+    info("*** Testing connectivity: client -> server\n")
+    reply = client.cmd("ping -c 3 10.0.0.1")
     print(reply)
 
-    # Setting fixed link properties (for example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
+    # Set link properties (example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
     change_link_properties(middle_link, 100, 0, 5, 0.1)
 
-    # ----- Start Tcpdump Captures on the Middle Link -----
+    # ------------------------------
+    # Start TCPDump Captures
+    # ------------------------------
     capture_interface = middle_link.intf1.name
 
-    # For Iperf Flow 1 (from h3 -> h6, port 5001)
-    iperf_flow1_capture_file = os.path.join(shared_directory, "iperf_flow1.pcap")
-    tcpdump_cmd_flow1 = ["sudo", "tcpdump", "-i", capture_interface, "-s", "96", "udp port 5001", "-w", iperf_flow1_capture_file]
-    info(f'*** Starting tcpdump on interface {capture_interface} for iperf flow 1 (port 5001), saving to {iperf_flow1_capture_file}\n')
+    # Flow 1: port 5001
+    iperf_flow1_capture = os.path.join(shared_directory, "iperf_flow1.pcap")
+    tcpdump_cmd_flow1 = [
+        "sudo", "tcpdump", "-i", capture_interface, "-s", "96",
+        "udp port 5001", "-w", iperf_flow1_capture
+    ]
+    info(f'*** Starting tcpdump for Flow 1 -> {iperf_flow1_capture}\n')
     tcpdump_proc_flow1 = subprocess.Popen(tcpdump_cmd_flow1)
 
-    # For Iperf Flow 2 (from h5 -> h4, port 5002)
-    iperf_flow2_capture_file = os.path.join(shared_directory, "iperf_flow2.pcap")
-    tcpdump_cmd_flow2 = ["sudo", "tcpdump", "-i", capture_interface, "-s", "96", "udp port 5002", "-w", iperf_flow2_capture_file]
-    info(f'*** Starting tcpdump on interface {capture_interface} for iperf flow 2 (port 5002), saving to {iperf_flow2_capture_file}\n')
+    # Flow 2: port 5002
+    iperf_flow2_capture = os.path.join(shared_directory, "iperf_flow2.pcap")
+    tcpdump_cmd_flow2 = [
+        "sudo", "tcpdump", "-i", capture_interface, "-s", "96",
+        "udp port 5002", "-w", iperf_flow2_capture
+    ]
+    info(f'*** Starting tcpdump for Flow 2 -> {iperf_flow2_capture}\n')
     tcpdump_proc_flow2 = subprocess.Popen(tcpdump_cmd_flow2)
 
-    # For all other traffic (Flow 3: non-iperf traffic)
-    flow3_capture_file = os.path.join(shared_directory, "flow3.pcap")
-    # Filter out iperf flows (UDP port 5001 and 5002)
-    tcpdump_cmd_flow3 = ["sudo", "tcpdump", "-i", capture_interface, "-s", "96", "not (udp port 5001 or udp port 5002)", "-w", flow3_capture_file]
-    info(f'*** Starting tcpdump on interface {capture_interface} for non-iperf traffic (Flow 3), saving to {flow3_capture_file}\n')
+    # Flow 3: all other traffic (NOT udp port 5001 or 5002)
+    flow3_capture = os.path.join(shared_directory, "flow3.pcap")
+    tcpdump_cmd_flow3 = [
+        "sudo", "tcpdump", "-i", capture_interface, "-s", "96",
+        "not (udp port 5001 or udp port 5002)",
+        "-w", flow3_capture
+    ]
+    info(f'*** Starting tcpdump for Flow 3 (non-iperf) -> {flow3_capture}\n')
     tcpdump_proc_flow3 = subprocess.Popen(tcpdump_cmd_flow3)
 
-    # Adding streaming Docker containers
-    streaming_server = add_streaming_container(mgr, 'streaming_server', 'server', 'streaming_server_image', shared_directory)
-    streaming_client = add_streaming_container(mgr, 'streaming_client', 'client', 'streaming_client_image', shared_directory)
+    # ------------------------------
+    # Add Streaming Containers
+    # ------------------------------
+    streaming_server = add_streaming_container(
+        mgr, 'streaming_server', 'server',
+        'streaming_server_image', shared_directory
+    )
+    streaming_client = add_streaming_container(
+        mgr, 'streaming_client', 'client',
+        'streaming_client_image', shared_directory
+    )
 
-    # Starting streaming server and client applications in separate threads.
+    # ------------------------------
+    # Start Streaming Threads
+    # ------------------------------
     server_thread = threading.Thread(target=start_server)
     client_thread = threading.Thread(target=start_client)
     server_thread.start()
     client_thread.start()
 
-    # ----- Iperf Communications: Start Immediately and Run Until Streaming Stops -----
-    info('*** Starting iperf communications concurrently with streaming...\n')
-    # Iperf Flow 1: from h3 (client) to h6 (server) on port 5001
-    start_iperf_server(h6, 5001)
-    start_iperf_client(h3, "10.0.0.6", 5001)
+    # ------------------------------
+    # Start iPerf Flows (Run for 600s)
+    # ------------------------------
+    def iperf_control():
+        info('*** Starting iPerf flows (600s duration)...\n')
+        # Flow 1: h3 -> h6 on port 5001
+        start_iperf_server_flow1(h6)
+        start_iperf_client_flow1(h3)
 
-    # Iperf Flow 2 (reverse): from h5 (client) to h4 (server) on port 5002
-    start_iperf_server(h4, 5002)
-    start_iperf_client(h5, "10.0.0.7", 5002)
+        # Flow 2: h5 -> h4 on port 5002
+        start_iperf_server_flow2(h4)
+        start_iperf_client_flow2(h5)
 
-    # The iperf flows will now run continuously until the streaming processes stop.
-    server_thread.join()  # Wait until the streaming server stops.
-    client_thread.join()  # Wait until the streaming client stops.
+        # Let iPerf run for 600 seconds
+        # (If your streaming ends earlier, you may see fewer packets
+        #  unless you remove the stop_iperf calls below.)
+        time.sleep(600)
 
-    info('*** Streaming processes have ended. Stopping iperf flows...\n')
-    for host in [h3, h6, h4, h5]:
-        stop_iperf(host)
+        info('*** Stopping iPerf flows...\n')
+        for host in [h3, h6, h4, h5]:
+            stop_iperf(host)
+
+    iperf_thread = threading.Thread(target=iperf_control)
+    iperf_thread.start()
+
+    # ------------------------------
+    # Wait for Streaming to Finish
+    # ------------------------------
+    server_thread.join()
+    client_thread.join()
+
+    # Wait for iPerf thread to finish (after 600 seconds)
+    iperf_thread.join()
 
     if not autotest:
         CLI(net)
 
-    # Terminating tcpdump captures before cleanup
+    # ------------------------------
+    # Terminate tcpdump captures
+    # ------------------------------
     info('*** Terminating tcpdump captures\n')
     tcpdump_proc_flow1.terminate()
     tcpdump_proc_flow1.wait()
@@ -171,7 +236,9 @@ if __name__ == '__main__':
     tcpdump_proc_flow3.terminate()
     tcpdump_proc_flow3.wait()
 
-    # Cleaning up Docker containers and stopping the network
+    # ------------------------------
+    # Cleanup
+    # ------------------------------
     mgr.removeContainer('streaming_server')
     mgr.removeContainer('streaming_client')
     net.stop()
