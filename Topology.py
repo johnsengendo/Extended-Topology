@@ -101,7 +101,7 @@ if __name__ == '__main__':
     info('\n*** Starting network\n')
     net.start()
 
-    # Testing connectivity: pinging from client to server
+    # Testing connectivity: ping from client to server
     info("*** Client host pings the server to test connectivity: \n")
     reply = client.cmd("ping -c 5 10.0.0.1")
     print(reply)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     # Setting fixed link properties (for example: 100 Mbps, 0 ms delay, 5 ms jitter, 0.1% loss)
     change_link_properties(middle_link, 100, 0, 5, 0.1)
 
-    # ----- Start Separate Tcpdump Captures for Iperf Flows -----
+    # ----- Start Tcpdump Captures on the Middle Link -----
     capture_interface = middle_link.intf1.name
 
     # For Iperf Flow 1 (from h3 -> h6, port 5001)
@@ -124,6 +124,13 @@ if __name__ == '__main__':
     info(f'*** Starting tcpdump on interface {capture_interface} for iperf flow 2 (port 5002), saving to {iperf_flow2_capture_file}\n')
     tcpdump_proc_flow2 = subprocess.Popen(tcpdump_cmd_flow2)
 
+    # For all other traffic (Flow 3: non-iperf traffic)
+    flow3_capture_file = os.path.join(shared_directory, "flow3.pcap")
+    # Filter out iperf flows (UDP port 5001 and 5002)
+    tcpdump_cmd_flow3 = ["sudo", "tcpdump", "-i", capture_interface, "-s", "96", "not (udp port 5001 or udp port 5002)", "-w", flow3_capture_file]
+    info(f'*** Starting tcpdump on interface {capture_interface} for non-iperf traffic (Flow 3), saving to {flow3_capture_file}\n')
+    tcpdump_proc_flow3 = subprocess.Popen(tcpdump_cmd_flow3)
+
     # Adding streaming Docker containers
     streaming_server = add_streaming_container(mgr, 'streaming_server', 'server', 'streaming_server_image', shared_directory)
     streaming_client = add_streaming_container(mgr, 'streaming_client', 'client', 'streaming_client_image', shared_directory)
@@ -134,7 +141,7 @@ if __name__ == '__main__':
     server_thread.start()
     client_thread.start()
 
-    # ----- Iperf Communications: Starting Immediately and Running Until Streaming Stops -----
+    # ----- Iperf Communications: Start Immediately and Run Until Streaming Stops -----
     info('*** Starting iperf communications concurrently with streaming...\n')
     # Iperf Flow 1: from h3 (client) to h6 (server) on port 5001
     start_iperf_server(h6, 5001)
@@ -144,7 +151,7 @@ if __name__ == '__main__':
     start_iperf_server(h4, 5002)
     start_iperf_client(h5, "10.0.0.7", 5002)
 
-    # The iperf flows will now run continuously.
+    # The iperf flows will now run continuously until the streaming processes stop.
     server_thread.join()  # Wait until the streaming server stops.
     client_thread.join()  # Wait until the streaming client stops.
 
@@ -161,6 +168,8 @@ if __name__ == '__main__':
     tcpdump_proc_flow1.wait()
     tcpdump_proc_flow2.terminate()
     tcpdump_proc_flow2.wait()
+    tcpdump_proc_flow3.terminate()
+    tcpdump_proc_flow3.wait()
 
     # Cleaning up Docker containers and stopping the network
     mgr.removeContainer('streaming_server')
