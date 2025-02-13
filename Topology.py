@@ -44,7 +44,7 @@ def start_iperf_server_flow1(host):
 
 def start_iperf_client_flow1(host):
     # iPerf client
-    host.cmd('iperf -c 10.0.0.6 -p 5001 -u -b 5M -t 1200 &')
+    host.cmd('iperf -c 10.0.0.6 -p 5001 -u -b 5M -t 2400 &')
 
 # Flow 2: from h5 -> h4 (UDP port 5002), reverse direction
 def start_iperf_server_flow2(host):
@@ -53,7 +53,7 @@ def start_iperf_server_flow2(host):
 
 def start_iperf_client_flow2(host):
     # iPerf client
-    host.cmd('iperf -c 10.0.0.7 -p 5002 -u -b 5M -t 1200 &')
+    host.cmd('iperf -c 10.0.0.7 -p 5002 -u -b 5M -t 2400 &')
 
 # Function to stop iPerf on a host
 def stop_iperf(host):
@@ -201,7 +201,7 @@ if __name__ == '__main__':
         start_iperf_server_flow2(h4)
         start_iperf_client_flow2(h5)
 
-        time.sleep(1200)
+        time.sleep(2400)
 
         info('*** Stopping iPerf flows...\n')
         for host in [h3, h6, h4, h5]:
