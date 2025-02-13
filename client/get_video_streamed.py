@@ -13,7 +13,7 @@ def get_video_stream():
     ffmpeg_command = [
         "ffmpeg", "-loglevel", "info", "-stats",
         "-i", "rtmp://10.0.0.1:1935/live/video.flv",
-        "-t", "600",              # Stream duration in seconds
+        "-t", "1200",              # Stream duration in seconds
         "-probesize", "80000",
         "-analyzeduration", "15",
         "-c:a", "copy",           # Copy audio without re-encoding
