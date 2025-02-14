@@ -22,7 +22,7 @@ Steps to set up and run the dashboard:
 5. Below is the dashboard overview.
 ![Dashboard Preview](images/dash-board-image.png)
 
-### **Next step for the extended topology to be built, image below** 
+## **Next step for the extended topology to be built, image below** 
 ![Topology](Extended_topology.png)
 
 ## Progress   
