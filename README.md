@@ -25,5 +25,14 @@ Steps to set up and run the dashboard:
 ### **Next step for the extended topology to be built, image below** 
 ![Topology](images/topology.jpg)
 
-## Progress  
+## Progress   
 `Topology.py` sets up the topology and runs everything while calling the video streaming inside the `video` folder, as well as the video client inside the `video` folder.  
+
+## Pcap File Patch  
+During streaming and Iperf data transmission, pcap files are captured. Various flaws detected in the middle link of the topology are stored in the `pcap` folder.  
+
+## Live Dashboard Upgrade  
+`DigitalTwin_dashboard.py` is an update of the dashboard, where it works efficiently with the activation of the PID. It also enables the continuous activation, deactivation and fine-tunning of the PID over time.
+
+## Live Dashboard Update  
+In this `Live_Dashboard_DigitalTwin.py` script, a pcap file can be loaded immediately, where it is processed, and live traffic is displayed enabling real-time monitoring and the continuous activation, deactivation and fine-tunning of the PID over time
