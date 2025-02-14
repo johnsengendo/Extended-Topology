@@ -11,14 +11,15 @@ import dash_bootstrap_components as dbc
 from collections import deque
 import warnings
 
+# Suppressing warnings
 warnings.filterwarnings('ignore')
 
-# Constants
-MAX_POINTS = 1000
-SCALER_PATH = 'scaler.pkl'
-MODEL_PATH = 'cnn_traffic_model.pth'
-DATA_PATH = 'packets_per_sec_analysis.csv'
-WINDOW_SIZE = 300  
+# Defining constants
+MAX_POINTS = 1000  # Maximum number of points storing in deques
+SCALER_PATH = 'scaler.pkl'  # Path to the scaler file
+MODEL_PATH = 'cnn_traffic_model.pth'  # Path to the model file
+DATA_PATH = 'packets_per_sec_analysis.csv'  # Path to the dataset
+WINDOW_SIZE = 300  # Window size for the CNN model
 
 # Defining the CNN model
 class CNNModel(nn.Module):
@@ -43,7 +44,7 @@ class CNNModel(nn.Module):
         x = self.fc2(x)
         return x
 
-# Function to create a windowed dataset
+# Creating a windowed dataset
 def create_dataset_windowed(features, labels, ahead=4, window_size=1, max_window_size=360):
     samples = features.shape[0] - ahead - (max_window_size - 1)
     window_size = min(max(window_size, 1), max_window_size)
@@ -54,20 +55,20 @@ def create_dataset_windowed(features, labels, ahead=4, window_size=1, max_window
     dataY = labels[ahead + max_window_size - 1 : ahead + max_window_size - 1 + samples]
     return dataX, dataY
 
-# Function to load the model and scaler
+# Loading the model and scaler
 def load_model_and_scaler():
     with open(SCALER_PATH, 'rb') as f:
         scaler = pickle.load(f)
-    print("Scaler loaded successfully")
+    print("Scaler loading successfully")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CNNModel(WINDOW_SIZE).to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
-    print("Model loaded successfully")
+    print("Model loading successfully")
     return model, scaler, device
 
-# Adaptive PID Controller definition
+# Defining an Adaptive PID Controller
 class AdaptivePIDController:
     def __init__(self, initial_kp=0.5, initial_ki=0.1, initial_kd=0.1, dt=0.1, setpoint=0):
         self.kp = initial_kp
@@ -124,7 +125,7 @@ class AdaptivePIDController:
         self.prediction_errors.clear()
         self.mae_history.clear()
 
-# Creating two separate PID controllers: one for validation and one for test
+# Creating PID controllers for validation and test sets
 pid_val = AdaptivePIDController()
 pid_test = AdaptivePIDController()
 
@@ -150,7 +151,7 @@ train_scaled = scaler.transform(train_values)
 val_scaled = scaler.transform(val_values)
 test_scaled = scaler.transform(test_values)
 
-# Deques for storing predictions and actual values
+# Storing predictions and actual values
 val_predictions = deque(maxlen=MAX_POINTS)
 test_predictions = deque(maxlen=MAX_POINTS)
 val_actuals = deque(maxlen=MAX_POINTS)
@@ -158,7 +159,7 @@ test_actuals = deque(maxlen=MAX_POINTS)
 val_pid_predictions = deque(maxlen=MAX_POINTS)
 test_pid_predictions = deque(maxlen=MAX_POINTS)
 
-# Deques for storing absolute errors (for bar charts)
+# Storing absolute errors (for bar charts)
 val_errors = deque(maxlen=MAX_POINTS)
 val_pid_errors = deque(maxlen=MAX_POINTS)
 test_errors = deque(maxlen=MAX_POINTS)
@@ -166,7 +167,7 @@ test_pid_errors = deque(maxlen=MAX_POINTS)
 
 current_index = 0
 
-# Helper function to style the figures
+# Helping to style the figures
 def style_figure(fig, title):
     fig.update_layout(
         title=title,
@@ -176,7 +177,7 @@ def style_figure(fig, title):
     )
     return fig
 
-# Dash App Layout (line graphs in first row, bar charts in second row)
+# Setting up the Dash App Layout (line graphs in first row, bar charts in second row)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SOLAR])
 app.title = "Traffic Digital Twin Dashboard"
 
@@ -232,7 +233,7 @@ app.layout = dbc.Container(
     style={"backgroundColor": "#2c3e50"},
 )
 
-# Callback to update all graphs
+# Updating all graphs
 @app.callback(
     [
         Output("val-traffic-graph", "figure"),
@@ -257,7 +258,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     global val_errors, val_pid_errors, test_errors, test_pid_errors
     global pid_val, pid_test
 
-    # Update dt for both PIDs based on selected update interval (ms -> seconds)
+    # Updating dt for both PIDs based on selected update interval (ms -> seconds)
     dt_sec = update_interval / 1000.0
     pid_val.dt = dt_sec
     pid_test.dt = dt_sec
@@ -282,7 +283,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     X_val_w, r_val_w = create_dataset_windowed(val_scaled, val_labels, ahead=ahead, window_size=WINDOW_SIZE)
     X_test_w, r_test_w = create_dataset_windowed(test_scaled, test_labels, ahead=ahead, window_size=WINDOW_SIZE)
 
-    # Checking if data is available; if not, return empty figures
+    # Checking if data is available; if not, returning empty figures
     if X_val_w.size == 0 or X_test_w.size == 0:
         empty_fig = go.Figure()
         empty_fig.add_annotation(
@@ -309,7 +310,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         val_pred = model(X_val_w[current_index:current_index + 1].to(device)).cpu().numpy()
         test_pred = model(X_test_w[current_index:current_index + 1].to(device)).cpu().numpy()
 
-    # Inverse scale predictions and targets
+    # Inverse scaling predictions and targets
     val_pred_unscaled = scaler.inverse_transform(val_pred)
     test_pred_unscaled = scaler.inverse_transform(test_pred)
     r_val_w_unscaled = scaler.inverse_transform(r_val_w[current_index:current_index + 1].numpy().reshape(-1, 1))
