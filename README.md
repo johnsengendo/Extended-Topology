@@ -26,7 +26,7 @@ Steps to set up and run the dashboard:
 ![Topology](Extended_topology.png)
 
 ## Progress   
-`Topology.py` sets up the topology and runs everything while calling the video streaming inside the `video` folder, as well as the video client inside the `video` folder.  
+`Topology.py` sets up the topology and runs everything while calling the video streaming server inside the `server` folder, as well as the video streaming client inside the `client` folder.  
 
 ## Pcap File Patch  
 During streaming and Iperf data transmission, pcap files are captured. Various flaws detected in the middle link of the topology are stored in the `pcap` folder.  
