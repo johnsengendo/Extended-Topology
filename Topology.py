@@ -35,7 +35,7 @@ def start_client():
     ])
 
 # ------------------------------
-# iPerf Flow Functions
+# iPerf flow functions
 # ------------------------------
 # Flow 1: from h3 -> h6 (UDP port 5001)
 def start_iperf_server_flow1(host):
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     info('\n*** Starting network\n')
     net.start()
 
-    # Quick connectivity check between client and server
+    # Quick connectivity check between video client and server
     info("*** Testing connectivity: client -> server\n")
     reply = client.cmd("ping -c 3 10.0.0.1")
     print(reply)
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     # Starting iPerf flows
     # ------------------------------
     def iperf_control():
-        info('*** Starting iPerf flows (600s duration)...\n')
+        info('*** Starting iPerf flows (30mins duration)...\n')
         # Flow 1: h3 -> h6 on port 5001
         start_iperf_server_flow1(h6)
         start_iperf_client_flow1(h3)
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     server_thread.join()
     client_thread.join()
 
-    # Wait for iPerf thread to finish (after 600 seconds)
+    # Wait for iPerf thread to finish (after 30mins)
     iperf_thread.join()
 
     if not autotest:
