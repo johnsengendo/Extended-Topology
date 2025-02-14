@@ -24,4 +24,6 @@ Steps to set up and run the dashboard:
 
 ### **Next step for the extended topology to be built, image below** 
 ![Topology](images/topology.jpg)
- 
+
+## Progress  
+`Topology.py` sets up the topology and runs everything while calling the video streaming inside the `video` folder, as well as the video client inside the `video` folder.  
