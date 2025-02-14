@@ -38,9 +38,9 @@ During streaming and Iperf data transmission, pcap files are captured. Various f
 In this `Live_Dashboard_DigitalTwin.py` script, a pcap file can be loaded immediately, where it is processed, and live traffic is displayed enabling real-time monitoring and the continuous activation, deactivation and fine-tunning of the PID over time
 
 ## How to Run the Emulation  
-1. **Cleanup**: Remove existing docker images and containers by running the bash script `./clean.sh`.  
+1. **Cleanup**: First we remove existing docker images and containers by running the bash script `./clean.sh`.  
 2. **Build server and client docker images**: using the `./build_docker_images.sh` script .  
-3. **Build the topology**: Execute the topology script to set up the network.  
+3. **Build the topology**: Executing the topology script to set up the network.  
 4. **Generate Live Traffic & Predictions**:  
    - The generated pcap files for different flows can be directly applied to the `Live_Dashboard_DigitalTwin.py` Python script to generate live traffic and as well to make predictions and also apply our PID technique.
-   - The generated pcap files can aswell firs be preproced to generate a csv file which can be applied to the `DigitalTwin_dashboard.py` to generate live traffic and as well to make predictions and also apply our PID technique.
+   - The generated pcap files can aswell first be preproced using a pcap processing file to generate a csv file which can be applied to the `DigitalTwin_dashboard.py` to generate live traffic and as well to make predictions and also apply our PID technique.
