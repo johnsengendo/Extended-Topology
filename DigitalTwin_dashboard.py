@@ -68,7 +68,7 @@ def load_model_and_scaler():
     print("Model loading successfully")
     return model, scaler, device
 
-# Defining an Adaptive PID Controller
+# ======= Adaptive PID Controller Definition ======= 
 class AdaptivePIDController:
     def __init__(self, initial_kp=0.5, initial_ki=0.1, initial_kd=0.1, dt=0.1, setpoint=0):
         self.kp = initial_kp
