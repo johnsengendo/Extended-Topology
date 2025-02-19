@@ -14,11 +14,11 @@ import warnings
 # Suppressing warnings
 warnings.filterwarnings('ignore')
 
-# Defining constants
+# Defining constants to use
 MAX_POINTS = 1000  # Maximum number of points storing in deques
 SCALER_PATH = 'scaler.pkl'  # Path to the scaler file
 MODEL_PATH = 'cnn_traffic_model.pth'  # Path to the model file
-DATA_PATH = 'packets_per_sec_analysis.csv'  # Path to the dataset
+DATA_PATH = 'results.csv'  # Path to the dataset
 WINDOW_SIZE = 300  # Window size for the CNN model
 
 # Defining the CNN model
@@ -159,7 +159,7 @@ test_actuals = deque(maxlen=MAX_POINTS)
 val_pid_predictions = deque(maxlen=MAX_POINTS)
 test_pid_predictions = deque(maxlen=MAX_POINTS)
 
-# Storing absolute errors (for bar charts)
+# Storing absolute errors (for bar chart)
 val_errors = deque(maxlen=MAX_POINTS)
 val_pid_errors = deque(maxlen=MAX_POINTS)
 test_errors = deque(maxlen=MAX_POINTS)
@@ -177,7 +177,7 @@ def style_figure(fig, title):
     )
     return fig
 
-# Setting up the Dash App Layout (line graphs in first row, bar charts in second row)
+# Setting up the Dash App Layout (line graphs in first row, single bar chart for test errors in second row)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SOLAR])
 app.title = "Traffic Digital Twin Dashboard"
 
@@ -213,17 +213,16 @@ app.layout = dbc.Container(
             dbc.Col(html.Button("Activate PID", id="activate-pid", className="btn btn-primary"), width=2),
             dbc.Col(html.Button("Deactivate PID", id="deactivate-pid", className="btn btn-danger"), width=2),
         ], className="mb-3"),
-        # First row: Line graphs for validation and test
+        # First row: Line graphs for validation and test traffic
         dbc.Row([
             dbc.Col(dcc.Graph(id="val-traffic-graph", style={"height": "500px"}), width=6),
             dbc.Col(dcc.Graph(id="test-traffic-graph", style={"height": "500px"}), width=6),
         ]),
-        # Second row: Bar charts for absolute errors
+        # Second row: Bar chart for test absolute errors
         dbc.Row([
-            dbc.Col(dcc.Graph(id="val-error-bar-graph", style={"height": "500px"}), width=6),
-            dbc.Col(dcc.Graph(id="test-error-bar-graph", style={"height": "500px"}), width=6),
+            dbc.Col(dcc.Graph(id="test-error-bar-graph", style={"height": "500px"}), width=12),
         ]),
-        # Fine-tune PID buttons at the bottom of the bar graphs
+        # Fine-tune PID buttons
         dbc.Row([
             dbc.Col(html.Button("Fine-tune PID +", id="increase-ki", className="btn btn-success"), width=2),
             dbc.Col(html.Button("Fine-tune PID -", id="decrease-ki", className="btn btn-warning"), width=2),
@@ -238,7 +237,6 @@ app.layout = dbc.Container(
     [
         Output("val-traffic-graph", "figure"),
         Output("test-traffic-graph", "figure"),
-        Output("val-error-bar-graph", "figure"),
         Output("test-error-bar-graph", "figure")
     ],
     [
@@ -258,7 +256,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     global val_errors, val_pid_errors, test_errors, test_pid_errors
     global pid_val, pid_test
 
-    # Updating dt for both PIDs based on selected update interval (ms -> seconds)
+    # Updating dt for both PIDs (ms -> seconds)
     dt_sec = update_interval / 1000.0
     pid_val.dt = dt_sec
     pid_test.dt = dt_sec
@@ -266,12 +264,12 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
 
-    # Resetting both PIDs on activation
+    # Resetting PIDs on activation
     if button_id == "activate-pid":
         pid_val.reset()
         pid_test.reset()
 
-    # Adjusting Ki for both if buttons are pressed
+    # Adjusting Ki if buttons are pressed
     if button_id == "increase-ki":
         pid_val.ki = np.clip(pid_val.ki * 1.1, pid_val.min_gain * 0.1, pid_val.max_gain * 0.1)
         pid_test.ki = np.clip(pid_test.ki * 1.1, pid_test.min_gain * 0.1, pid_test.max_gain * 0.1)
@@ -283,7 +281,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     X_val_w, r_val_w = create_dataset_windowed(val_scaled, val_labels, ahead=ahead, window_size=WINDOW_SIZE)
     X_test_w, r_test_w = create_dataset_windowed(test_scaled, test_labels, ahead=ahead, window_size=WINDOW_SIZE)
 
-    # Checking if data is available; if not, returning empty figures
+    # If not enough data is available, return empty figures
     if X_val_w.size == 0 or X_test_w.size == 0:
         empty_fig = go.Figure()
         empty_fig.add_annotation(
@@ -293,7 +291,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
             font=dict(color="white", size=16)
         )
         empty_fig.update_layout(template="plotly_dark", xaxis=dict(visible=False), yaxis=dict(visible=False))
-        return empty_fig, empty_fig, empty_fig, empty_fig
+        return empty_fig, empty_fig, empty_fig
 
     # Converting to Torch tensors
     X_val_w = torch.FloatTensor(X_val_w).transpose(1, 2)
@@ -301,7 +299,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     X_test_w = torch.FloatTensor(X_test_w).transpose(1, 2)
     r_test_w = torch.FloatTensor(r_test_w)
 
-    # Resetting current_index if it is out of range
+    # Resetting current_index if it exceeds available data
     if current_index >= len(X_val_w):
         current_index = 0
 
@@ -310,7 +308,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         val_pred = model(X_val_w[current_index:current_index + 1].to(device)).cpu().numpy()
         test_pred = model(X_test_w[current_index:current_index + 1].to(device)).cpu().numpy()
 
-    # Inverse scaling predictions and targets
+    # Inverse transform predictions and targets
     val_pred_unscaled = scaler.inverse_transform(val_pred)
     test_pred_unscaled = scaler.inverse_transform(test_pred)
     r_val_w_unscaled = scaler.inverse_transform(r_val_w[current_index:current_index + 1].numpy().reshape(-1, 1))
@@ -325,7 +323,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     # Determining if PID is active
     pid_active = (activate_clicks is not None and (deactivate_clicks is None or activate_clicks > deactivate_clicks))
 
-    # Validation PID update
+    # Updating PID for validation (for internal tracking)
     val_pid_pred = val_pred_unscaled[0][0]
     if pid_active:
         pid_val.setpoint = r_val_w_unscaled[0][0]
@@ -333,7 +331,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         val_pid_pred += val_adjustment
     val_pid_predictions.append(val_pid_pred)
 
-    # Test PID update
+    # Updating PID for test predictions
     test_pid_pred = test_pred_unscaled[0][0]
     if pid_active:
         pid_test.setpoint = r_test_w_unscaled[0][0]
@@ -341,21 +339,17 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         test_pid_pred += test_adjustment
     test_pid_predictions.append(test_pid_pred)
 
-    # Computing absolute errors for bar charts
-    val_err = abs(r_val_w_unscaled[0][0] - val_pred_unscaled[0][0])
-    val_pid_err = abs(r_val_w_unscaled[0][0] - val_pid_pred)
+    # Computing absolute errors for test set
     test_err = abs(r_test_w_unscaled[0][0] - test_pred_unscaled[0][0])
     test_pid_err = abs(r_test_w_unscaled[0][0] - test_pid_pred)
 
-    val_errors.append(val_err)
-    val_pid_errors.append(val_pid_err)
     test_errors.append(test_err)
     test_pid_errors.append(test_pid_err)
 
     # Incrementing current_index
     current_index = (current_index + 1) % len(X_val_w)
 
-    # Building line graphs
+    # Building line graphs for validation and test traffic
     val_fig = go.Figure()
     val_fig.add_trace(go.Scatter(y=list(val_actuals), mode="lines", name="Actual", line=dict(color="yellow", width=2)))
     val_fig.add_trace(go.Scatter(y=list(val_predictions), mode="lines", name="Predicted", line=dict(color="cyan", width=2)))
@@ -372,16 +366,8 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     test_fig.update_layout(xaxis_title="Time Step", yaxis_title="Packets/sec")
     test_fig = style_figure(test_fig, "Test Traffic Prediction")
 
-    # Building bar charts (only if PID is active)
+    # Building bar chart for test absolute errors
     if pid_active:
-        val_err_fig = go.Figure()
-        val_err_fig.add_trace(go.Bar(x=list(range(len(val_errors))), y=list(val_errors),
-                                     name="Error (Predicted)", marker_color="cyan"))
-        val_err_fig.add_trace(go.Bar(x=list(range(len(val_pid_errors))), y=list(val_pid_errors),
-                                     name="Error (PID Adjusted)", marker_color="magenta"))
-        val_err_fig.update_layout(barmode="group")
-        val_err_fig = style_figure(val_err_fig, "Validation Absolute Error")
-
         test_err_fig = go.Figure()
         test_err_fig.add_trace(go.Bar(x=list(range(len(test_errors))), y=list(test_errors),
                                       name="Error (Predicted)", marker_color="cyan"))
@@ -390,12 +376,10 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         test_err_fig.update_layout(barmode="group")
         test_err_fig = style_figure(test_err_fig, "Test Absolute Error")
     else:
-        val_err_fig = go.Figure()
-        val_err_fig = style_figure(val_err_fig, "Validation Absolute Error")
         test_err_fig = go.Figure()
         test_err_fig = style_figure(test_err_fig, "Test Absolute Error")
 
-    return val_fig, test_fig, val_err_fig, test_err_fig
+    return val_fig, test_fig, test_err_fig
 
 if __name__ == "__main__":
     app.run_server(debug=True)
