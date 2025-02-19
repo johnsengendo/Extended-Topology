@@ -14,6 +14,7 @@ import dash_bootstrap_components as dbc
 from collections import deque
 import warnings
 
+# Suppressing warnings
 warnings.filterwarnings('ignore')
 
 # ======= PCAP Processing Function =======
@@ -66,7 +67,7 @@ def process_pcap_to_csv():
 # Processing the PCAP file before proceeding so the CSV is up-to-date.
 process_pcap_to_csv()
 
-# Defining constants
+# Defining constants to use
 MAX_POINTS = 1000  # Maximum number of points storing in deques
 SCALER_PATH = 'scaler.pkl'  # Path to the scaler file
 MODEL_PATH = 'cnn_traffic_model.pth'  # Path to the model file
