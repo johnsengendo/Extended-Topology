@@ -42,5 +42,4 @@ In this `Live_Dashboard_DigitalTwin.py` script, a pcap file can be loaded immedi
 2. **Build server and client docker images**: using the `./build_docker_images.sh` script .  
 3. **Build the topology**: Executing the topology script to set up the network.  
 4. **Generate Live Traffic & Predictions**:  
-   - The generated pcap files for different flows can be directly applied to the `Live_Dashboard_DigitalTwin.py` Python script to generate live traffic and as well to make predictions and also apply our PID technique (NB: the pcap file should be in the same folder where the script is stored and running).
-   - The generated pcap files can aswell first be preproced using a pcap processing file to generate a csv file which can be applied to the `DigitalTwin_dashboard.py` to generate live traffic and as well to make predictions and also apply our PID technique.
+   - The generated pcap files can first be preproced using a pcap processing file to generate a csv file which can be applied to the `DigitalTwin_dashboard.py` to generate live traffic and as well to make predictions and also apply our PID technique.
