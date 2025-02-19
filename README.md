@@ -34,8 +34,6 @@ During streaming and Iperf data transmission, pcap files are captured. Various f
 ## Live Dashboard Upgrade1  
 `DigitalTwin_dashboard.py` is an update of the dashboard, where it works efficiently with the activation of the PID. It also enables the continuous activation, deactivation and fine-tunning of the PID over time.
 
-## Live Dashboard Upgrade2 
-In this `Live_Dashboard_DigitalTwin.py` script, a pcap file can be loaded immediately, where it is processed, and live traffic is displayed enabling real-time monitoring and the continuous activation, deactivation and fine-tunning of the PID over time
 
 ## How to Run the Emulation  
 1. **Cleanup**: First we remove existing docker images and containers by running the bash script `./clean.sh`.  
