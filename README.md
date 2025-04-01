@@ -43,3 +43,4 @@ During streaming and Iperf data transmission, pcap files are captured. Various f
    - The generated pcap files can first be preproced using a pcap processing file to generate a csv file which can be applied to the `DigitalTwin_dashboard.py` to generate live traffic and as well to make predictions and also apply our PID technique.
 ### Updated Live Dashboard  
 This update presents an improved version of our live dashboard. The figure below displays the enhanced dashboard, while the updated Python script (`Improved_live_dashboard.py`) can be executed to generate the latest version of the dashboard.  
+![Interface](screencapture-127-0-0-1-8050-2025-04-01-10_46_32.png)
