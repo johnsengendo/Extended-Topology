@@ -189,7 +189,7 @@ def style_figure(fig, title):
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top',
-            'font': dict(size=20, color='black', family="Arial, sans-serif", weight='bold')
+            'font': dict(size=24, color='black', family="Arial, sans-serif", weight='bold')
         },
         template="plotly_white",
         margin=dict(l=60, r=50, t=80, b=60),
@@ -198,7 +198,7 @@ def style_figure(fig, title):
         paper_bgcolor='white',
         font=dict(
             family="Arial, sans-serif",
-            size=12,
+            size=14,
             color="black"
         ),
         legend=dict(
@@ -208,7 +208,8 @@ def style_figure(fig, title):
             xanchor="center",
             x=0.5,
             bgcolor='rgba(255, 255, 255, 0.5)',
-            itemsizing='constant'
+            #itemsizing='constant'
+            font=dict(size=18)
         ),
         xaxis=dict(
             title='Time Step (seconds)',
@@ -217,8 +218,8 @@ def style_figure(fig, title):
             linecolor='black',
             linewidth=1,
             mirror=True,
-            titlefont=dict(size=16, weight='bold'),
-            tickfont=dict(size=14),
+            titlefont=dict(size=20, weight='bold'),
+            tickfont=dict(size=16),
             zeroline=True,  # Adds a zero line
             zerolinecolor='black',
             zerolinewidth=1  # Width of the zero line
@@ -230,8 +231,8 @@ def style_figure(fig, title):
             linecolor='black',
             linewidth=1,
             mirror=True,
-            titlefont=dict(size=16, weight='bold'),
-            tickfont=dict(size=14),
+            titlefont=dict(size=20, weight='bold'),
+            tickfont=dict(size=16),
             zeroline=True,
             zerolinecolor='black',
             zerolinewidth=1
@@ -289,10 +290,20 @@ app.layout = dbc.Container(
         dbc.Row([
             dbc.Col(dcc.Graph(id="test-error-bar-graph", style={"height": "500px"}), width=12),
         ]),
-        # Fine-tune PID buttons
+        # New PID adjustment buttons
         dbc.Row([
-            dbc.Col(html.Button("Fine-tune PID +", id="increase-ki", className="btn btn-success"), width=2),
-            dbc.Col(html.Button("Fine-tune PID -", id="decrease-ki", className="btn btn-warning"), width=2),
+            dbc.Col([
+                html.Button("(kp) +", id="increase-kp", className="btn btn-success"),
+                html.Button("(kp) -", id="decrease-kp", className="btn btn-warning mt-2")
+            ], width=2),
+            dbc.Col([
+                html.Button("(ki) +", id="increase-ki", className="btn btn-success"),
+                html.Button("(ki) -", id="decrease-ki", className="btn btn-warning mt-2")
+            ], width=2),
+            dbc.Col([
+                html.Button("(kd) +", id="increase-kd", className="btn btn-success"),
+                html.Button("(kd) -", id="decrease-kd", className="btn btn-warning mt-2")
+            ], width=2),
         ], className="mb-3"),
         dcc.Interval(id="interval-component", interval=1000, n_intervals=0),
     ],
@@ -310,13 +321,17 @@ app.layout = dbc.Container(
         Input("interval-component", "n_intervals"),
         Input("activate-pid", "n_clicks"),
         Input("deactivate-pid", "n_clicks"),
+        Input("increase-kp", "n_clicks"),
+        Input("decrease-kp", "n_clicks"),
         Input("increase-ki", "n_clicks"),
         Input("decrease-ki", "n_clicks"),
+        Input("increase-kd", "n_clicks"),
+        Input("decrease-kd", "n_clicks"),
     ],
     [State("ahead-selector", "value"), State("update-interval", "value")]
 )
 def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
-                  increase_ki, decrease_ki, ahead, update_interval):
+                  increase_kp, decrease_kp, increase_ki, decrease_ki, increase_kd, decrease_kd, ahead, update_interval):
     global current_index, pid_activation_time
     global val_predictions, test_predictions, val_actuals, test_actuals
     global val_errors, val_pid_errors, test_errors, test_pid_errors
@@ -330,7 +345,7 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     ctx = callback_context
     button_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
 
-    # Determine if PID is active
+    # Determining if PID is active
     pid_active = (activate_clicks is not None and (deactivate_clicks is None or activate_clicks > deactivate_clicks))
 
     # Mark when PID was activated
@@ -351,13 +366,25 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
         val_pid_errors.clear()
         test_pid_errors.clear()
 
-    # Adjusting Ki if buttons are pressed
-    if button_id == "increase-ki":
+    # Adjusting KP, KI, KD if buttons are pressed
+    if button_id == "increase-kp":
+        pid_val.kp = np.clip(pid_val.kp * 1.1, pid_val.min_gain, pid_val.max_gain)
+        pid_test.kp = np.clip(pid_test.kp * 1.1, pid_test.min_gain, pid_test.max_gain)
+    elif button_id == "decrease-kp":
+        pid_val.kp = np.clip(pid_val.kp * 0.9, pid_val.min_gain, pid_val.max_gain)
+        pid_test.kp = np.clip(pid_test.kp * 0.9, pid_test.min_gain, pid_test.max_gain)
+    elif button_id == "increase-ki":
         pid_val.ki = np.clip(pid_val.ki * 1.1, pid_val.min_gain * 0.1, pid_val.max_gain * 0.1)
         pid_test.ki = np.clip(pid_test.ki * 1.1, pid_test.min_gain * 0.1, pid_test.max_gain * 0.1)
     elif button_id == "decrease-ki":
         pid_val.ki = np.clip(pid_val.ki * 0.9, pid_val.min_gain * 0.1, pid_test.max_gain * 0.1)
         pid_test.ki = np.clip(pid_test.ki * 0.9, pid_test.min_gain * 0.1, pid_test.max_gain * 0.1)
+    elif button_id == "increase-kd":
+        pid_val.kd = np.clip(pid_val.kd * 1.1, pid_val.min_gain * 0.5, pid_val.max_gain * 0.5)
+        pid_test.kd = np.clip(pid_test.kd * 1.1, pid_test.min_gain * 0.5, pid_test.max_gain * 0.5)
+    elif button_id == "decrease-kd":
+        pid_val.kd = np.clip(pid_val.kd * 0.9, pid_val.min_gain * 0.5, pid_val.max_gain * 0.5)
+        pid_test.kd = np.clip(pid_test.kd * 0.9, pid_test.min_gain * 0.5, pid_test.max_gain * 0.5)
 
     # Building windowed datasets for validation and test
     X_val_w, r_val_w = create_dataset_windowed(val_scaled, val_labels, ahead=ahead, window_size=WINDOW_SIZE)
@@ -393,8 +420,6 @@ def update_graphs(n_intervals, activate_clicks, deactivate_clicks,
     # Using predictions directly
     val_pred_unscaled = val_pred
     test_pred_unscaled = test_pred
-
-    # For actual values
     r_val_w_unscaled = r_val_w[current_index:current_index + 1].numpy().reshape(-1, 1)
     r_test_w_unscaled = r_test_w[current_index:current_index + 1].numpy().reshape(-1, 1)
 
