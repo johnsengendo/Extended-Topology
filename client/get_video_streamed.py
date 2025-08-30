@@ -20,7 +20,7 @@ def get_video_stream():
         "-i", "rtmp://10.0.0.1:1935/live/video.flv",  # RTMP input stream
         # RTMP protocol doc: https://en.wikipedia.org/wiki/Real-Time_Messaging_Protocol
 
-        "-t", "18",             # Limit capture to 1800 seconds (30 mins)
+        "-t", "1800",             # Limit capture to 1800 seconds (30 mins)
         # FFmpeg time limit: https://ffmpeg.org/ffmpeg.html#Main-options
 
         "-probesize", "80000",    # Amount of data to probe for stream info
