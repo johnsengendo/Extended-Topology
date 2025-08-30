@@ -201,7 +201,7 @@ if __name__ == '__main__':
         start_iperf_server_flow2(h4)
         start_iperf_client_flow2(h5)
 
-        time.sleep(1800)
+        time.sleep(18)
 
         info('*** Stopping iPerf flows...\n')
         for host in [h3, h6, h4, h5]:
@@ -240,3 +240,4 @@ if __name__ == '__main__':
     mgr.removeContainer('streaming_client')
     net.stop()
     mgr.stop()
+
