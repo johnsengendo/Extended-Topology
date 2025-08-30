@@ -16,7 +16,7 @@ def main():
     loops_number = -1
 
     # Duration of stream in seconds (30 minutes)
-    duration = "1800"
+    duration = "18"
 
     # FFmpeg command with detailed options
     ffmpeg_command = [
